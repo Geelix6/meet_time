@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique @db.VarChar(255)
+  username  String   @unique @db.VarChar(255)
+  firstName String   @db.VarChar(255)
+  lastName  String   @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  salt      String   @db.VarChar(31)
+  createdAt DateTime @default(now())
+
+  friends      UserToFriends[]
+  freeTime     UserToFreeTime[]
+  meeting      UserToMeeting[]
+  notification UserToNotification[]
+}
+
+model UserToFriends {
+  user       User    @relation(fields: [userId], references: [id])
+  friends    Friends @relation(fields: [pairId], references: [id])
+  userId     String  @db.Uuid
+  pairId     String  @db.Uuid
+  initiator  String  @db.Uuid // кто отправил запрос на дружбу
+  isApproved Boolean @default(false) // и если она еще не подтверждена, то висит в "заявки в друзья"
+
+  @@id([userId, pairId])
+}
+
+model Friends {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstFriendId  String          @db.Uuid
+  secondFriendId String          @db.Uuid
+  user           UserToFriends[]
+}
+
+model UserToFreeTime {
+  user       User     @relation(fields: [userId], references: [id])
+  freeTime   FreeTime @relation(fields: [freeTimeId], references: [id])
+  userId     String   @db.Uuid
+  freeTimeId String   @db.Uuid
+
+  @@id([userId, freeTimeId])
+}
+
+model FreeTime {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  timeStart  DateTime         @db.Timestamp()
+  timeEnd    DateTime         @db.Timestamp()
+  timeStatus String // точно свободен, не уверен, ну есть шансы
+  user       UserToFreeTime[]
+}
+
+model UserToMeeting {
+  user        User    @relation(fields: [userId], references: [id])
+  meeting     Meeting @relation(fields: [meetingId], references: [id])
+  userId      String  @db.Uuid
+  meetingId   String  @db.Uuid
+  meetingNote String
+
+  @@id([userId, meetingId])
+}
+
+model Meeting {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  timeStart   DateTime @db.Timestamp()
+  timeEnd     DateTime @db.Timestamp()
+  leisureType String // прогулка, рестик, чтение книг...
+  isPast      Boolean  @default(false) // если время встречи прошло, то она улетает в историю встреч
+
+  user UserToMeeting[]
+}
+
+model UserToNotification {
+  user           User         @relation(fields: [userId], references: [id])
+  meeting        Notification @relation(fields: [notificationId], references: [id])
+  userId         String       @db.Uuid
+  notificationId String       @db.Uuid
+  meetingNote    String
+
+  @@id([userId, notificationId])
+}
+
+model Notification {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  user UserToNotification[]
+  text String
+}

@@ -1,30 +1,54 @@
 import { prisma } from "../server";
-import { PrismaClient, User } from "@prisma/client";
-
-type ICreateUser = {
-  firstName: string;
-  lastName: string;
-  age: number;
-};
+import { User } from "@prisma/client";
 
 export default class UserService {
-  createUser(user: ICreateUser): Promise<User> {
+  createUser(user: User) {
     return prisma.user.create({
       data: {
-        firstName: user.firstName, // Убедись, что это имя соответствует модели Prisma
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
         lastName: user.lastName,
-        age: user.age,
+        password: user.password,
+        salt: user.salt,
       },
     });
   }
 
-  async getUsers(): Promise<User[]> {
-    return prisma.user.findMany();
+  async getAllUsers() {
+    const users = await prisma.user.findMany();
+    return users;
   }
 
-  async deleteUser(userID: number): Promise<User | null> {
-    return prisma.user.delete({
-      where: { ID: userID },
+  async findUserById(userId: string) {
+    const user = await prisma.user.findFirst({ where: { id: userId } });
+    return user;
+  }
+
+  async findUserByNickOrEmail(nickOrEmail: string) {
+    const user = await prisma.user.findFirst({ where: { OR: [{ username: nickOrEmail }, { email: nickOrEmail }] } });
+    return user;
+  }
+
+  async createFriendship(firstFriendId: string, secondFriendId: string) {
+    const friendRow = await prisma.friends.create({ data: { firstFriendId, secondFriendId } });
+    await prisma.userToFriends.create({
+      data: { userId: firstFriendId, pairId: friendRow.id, initiator: firstFriendId },
+    });
+    await prisma.userToFriends.create({
+      data: { userId: secondFriendId, pairId: friendRow.id, initiator: firstFriendId },
     });
   }
+
+  async getUserFriends(userId: string) {
+    const user = await prisma.user.findFirst({ where: { id: userId } });
+    const userIdd = user?.id;
+    const friends = await prisma.userToFriends.findMany({ where: { userId: userIdd } });
+  }
+
+  // async deleteUser(userId: string) {
+  //   return prisma.user.delete({
+  //     where: { id: userId },
+  //   });
+  // }
 }
