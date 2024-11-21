@@ -71,10 +71,10 @@ const createUser = async () => {
   if (response.ok) {
     let jwtToken = await response.json();
     localStorage.setItem("jwtToken", jwtToken);
-    router.push("/lk");
+    router.push("/lk/calendar");
   } else {
     const message = await response.json();
-    console.log(message);
+
     if (message.code == "P2002") {
       errorMessage.value = "Данная почта или ник уже заняты";
     }
@@ -98,10 +98,16 @@ const loginUser = async () => {
   if (response.ok) {
     let jwtToken = await response.json();
     localStorage.setItem("jwtToken", jwtToken);
-    router.push("/lk");
+    router.push("/lk/calendar");
   } else {
     const message = await response.json();
-    console.log(message);
+
+    if (message.message == "not found") {
+      errorMessage.value = "Такого пользователя нет";
+    }
+    if (message.message == "incorrect password") {
+      errorMessage.value = "Неверный пароль";
+    }
   }
 };
 </script>
@@ -294,7 +300,7 @@ const loginUser = async () => {
         class="w-3/4 flex-auto"
       />
     </div>
-    <span v-if="errorMessage != ''" class="mb-4 block text-orange-700">{{
+    <span v-if="errorMessage" class="mb-4 block text-orange-700">{{
       errorMessage
     }}</span>
     <span

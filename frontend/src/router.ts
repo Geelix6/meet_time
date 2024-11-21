@@ -1,6 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 import MainPage from "./views/MainPage.vue";
 import UserPage from "./views/UserPage.vue";
+import CalendarView from "./views/CalendarView.vue";
+import FriendsView from "./views/FriendsView.vue";
+import SettingsView from "./views/SettingsView.vue";
+import HistoryView from "./views/HistoryView.vue";
 
 const router = createRouter({
   routes: [
@@ -27,6 +31,12 @@ const router = createRouter({
           next();
         }
       },
+      children: [
+        { path: "calendar", component: CalendarView },
+        { path: "friends", component: FriendsView },
+        { path: "history", component: HistoryView },
+        { path: "settings", component: SettingsView },
+      ],
     },
   ],
   scrollBehavior() {
