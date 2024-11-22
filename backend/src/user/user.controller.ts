@@ -23,7 +23,6 @@ userRouter.post("/create/user", async (req, res) => {
 
     res.status(201).json(token);
   } catch (err) {
-    console.log(err);
     res.status(400).json(err);
   }
 });
@@ -69,24 +68,42 @@ userRouter.get("/get/user", authMiddleware, async (req, res) => {
   res.status(200).json(req.body.$user);
 });
 
-userRouter.get("/get/users", authMiddleware, async (req, res) => {
-  const users = await userService.getAllUsers();
-  res.status(200).json(users);
+userRouter.get("/get/freetime", authMiddleware, async (req, res) => {
+  const freetime = await userService.getFreeTime(req.body.$user.id);
+  res.status(200).json(freetime);
 });
 
-userRouter.get("/get/friends", authMiddleware, async (req, res) => {
-  // const friends = await userService.getUserFriends(req.body.userId);
-  res.status(200).json({ friends: [1, 2, 3, 4] });
+userRouter.post("/set/freetime", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const timeStart = req.body.timeStart;
+  const timeEnd = req.body.timeEnd;
+
+  const userToFreeTime = await userService.setFreeTime(userId, timeStart, timeEnd);
+  if (!userToFreeTime) {
+    res.status(228).json("1");
+  } else {
+    res.status(200).json(userToFreeTime);
+  }
 });
 
-userRouter.post("/create/friendship", async (req, res) => {
-  const { firstFriendId, secondFriendId } = req.body;
-  const user = await userService.createFriendship(firstFriendId, secondFriendId);
-  res.status(201).json(user);
+userRouter.post("/delete/freetime", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const timeStart = req.body.timeStart;
+  const timeEnd = req.body.timeEnd;
+
+  const userToFreeTime = await userService.deleteFreeTime(userId, timeStart, timeEnd);
+  res.status(200).json();
 });
 
-userRouter.post("/test", async (req, res) => {
-  console.log(req.body.id);
-});
+// userRouter.get("/get/friends", authMiddleware, async (req, res) => {
+//   // const friends = await userService.getUserFriends(req.body.userId);
+//   res.status(200).json({ friends: [1, 2, 3, 4] });
+// });
+
+// userRouter.post("/create/friendship", async (req, res) => {
+//   const { firstFriendId, secondFriendId } = req.body;
+//   const user = await userService.createFriendship(firstFriendId, secondFriendId);
+//   res.status(201).json(user);
+// });
 
 export default userRouter;

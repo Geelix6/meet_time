@@ -54,7 +54,7 @@ model FreeTime {
   id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   timeStart  DateTime         @db.Timestamp()
   timeEnd    DateTime         @db.Timestamp()
-  timeStatus String // точно свободен, не уверен, ну есть шансы
+  timeStatus String? // точно свободен, не уверен, ну есть шансы
   user       UserToFreeTime[]
 }
 

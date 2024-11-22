@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import MainPage from "./views/MainPage.vue";
 import UserPage from "./views/UserPage.vue";
-import CalendarView from "./views/CalendarView.vue";
+import CalendarView from "./views/AppCalendarView.vue";
 import FriendsView from "./views/FriendsView.vue";
 import SettingsView from "./views/SettingsView.vue";
 import HistoryView from "./views/HistoryView.vue";

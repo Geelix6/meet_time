@@ -1,5 +1,5 @@
 import { prisma } from "../server";
-import { User } from "@prisma/client";
+import { FreeTime, User } from "@prisma/client";
 
 export default class UserService {
   createUser(user: User) {
@@ -13,11 +13,6 @@ export default class UserService {
         salt: user.salt,
       },
     });
-  }
-
-  async getAllUsers() {
-    const users = await prisma.user.findMany();
-    return users;
   }
 
   async findUserById(userId: string) {
@@ -41,14 +36,48 @@ export default class UserService {
   }
 
   async getUserFriends(userId: string) {
-    const user = await prisma.user.findFirst({ where: { id: userId } });
-    const userIdd = user?.id;
-    const friends = await prisma.userToFriends.findMany({ where: { userId: userIdd } });
+    const friends = await prisma.userToFriends.findMany({ where: { userId /*: userIdd */ } });
   }
 
-  // async deleteUser(userId: string) {
-  //   return prisma.user.delete({
-  //     where: { id: userId },
-  //   });
-  // }
+  async getFreeTime(userId: string) {
+    const userToFreeTime = await prisma.userToFreeTime.findMany({ where: { userId } });
+
+    const freeTimes = await Promise.all(
+      userToFreeTime.map(async (e) => {
+        return await prisma.freeTime.findFirst({ where: { id: e.freeTimeId } });
+      })
+    );
+
+    return freeTimes;
+  }
+
+  async setFreeTime(userId: string, timeStart: Date, timeEnd: Date) {
+    const overlappingSlot = await prisma.freeTime.findFirst({
+      where: {
+        OR: [
+          {
+            timeStart: {
+              lte: timeEnd,
+            },
+            timeEnd: {
+              gte: timeStart,
+            },
+          },
+        ],
+      },
+    });
+
+    if (overlappingSlot) return;
+
+    const freeTimeId = (await prisma.freeTime.create({ data: { timeStart, timeEnd } })).id;
+    const userToFreeTime = await prisma.userToFreeTime.create({ data: { freeTimeId, userId } });
+    return userToFreeTime;
+  }
+
+  async deleteFreeTime(userId: string, timeStart: Date, timeEnd: Date) {
+    const freeTimeId = (await prisma.freeTime.findFirst({ where: { timeStart, AND: { timeEnd } } }))!.id;
+    const userId_freeTimeId = { userId, freeTimeId };
+    await prisma.userToFreeTime.delete({ where: { userId_freeTimeId } });
+    await prisma.freeTime.delete({ where: { id: freeTimeId } });
+  }
 }
