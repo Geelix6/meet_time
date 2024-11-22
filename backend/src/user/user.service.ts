@@ -25,20 +25,6 @@ export default class UserService {
     return user;
   }
 
-  async createFriendship(firstFriendId: string, secondFriendId: string) {
-    const friendRow = await prisma.friends.create({ data: { firstFriendId, secondFriendId } });
-    await prisma.userToFriends.create({
-      data: { userId: firstFriendId, pairId: friendRow.id, initiator: firstFriendId },
-    });
-    await prisma.userToFriends.create({
-      data: { userId: secondFriendId, pairId: friendRow.id, initiator: firstFriendId },
-    });
-  }
-
-  async getUserFriends(userId: string) {
-    const friends = await prisma.userToFriends.findMany({ where: { userId /*: userIdd */ } });
-  }
-
   async getFreeTime(userId: string) {
     const userToFreeTime = await prisma.userToFreeTime.findMany({ where: { userId } });
 
@@ -79,5 +65,58 @@ export default class UserService {
     const userId_freeTimeId = { userId, freeTimeId };
     await prisma.userToFreeTime.delete({ where: { userId_freeTimeId } });
     await prisma.freeTime.delete({ where: { id: freeTimeId } });
+  }
+
+  async createFriendship(firstFriendId: string, secondFriendNoE: string) {
+    const secondFriendId = (await this.findUserByNickOrEmail(secondFriendNoE))?.id;
+
+    if (!secondFriendId) return;
+
+    const friendRow = await prisma.friends.create({ data: { firstFriendId, secondFriendId } });
+    await prisma.userToFriends.create({
+      data: { userId: firstFriendId, pairId: friendRow.id, initiator: firstFriendId },
+    });
+    await prisma.userToFriends.create({
+      data: { userId: secondFriendId, pairId: friendRow.id, initiator: firstFriendId },
+    });
+    return friendRow;
+  }
+
+  async getUserFriends(userId: string) {
+    const userFriends = await prisma.friends.findMany({
+      where: { OR: [{ firstFriendId: userId }, { secondFriendId: userId }] },
+    });
+
+    const friendsPairs = await Promise.all(
+      userFriends.map((e) => prisma.userToFriends.findFirst({ where: { pairId: e.id, NOT: { userId } } }))
+    );
+
+    const friends = await Promise.all(
+      friendsPairs.map(async (e) => {
+        const user = await prisma.user.findFirst({ where: { id: e?.userId } });
+        return {
+          ...user,
+          isApproved: e?.isApproved,
+          initiator: e?.initiator,
+          pairId: e?.pairId,
+        };
+      })
+    );
+
+    return friends;
+  }
+
+  async acceptFriend(pairId: string, friendId: string, userId: string) {
+    await prisma.userToFriends.update({ where: { userId_pairId: { pairId, userId } }, data: { isApproved: true } });
+    await prisma.userToFriends.update({
+      where: { userId_pairId: { pairId, userId: friendId } },
+      data: { isApproved: true },
+    });
+  }
+
+  async deleteFriend(pairId: string, friendId: string, userId: string) {
+    await prisma.userToFriends.delete({ where: { userId_pairId: { pairId, userId } } });
+    await prisma.userToFriends.delete({ where: { userId_pairId: { pairId, userId: friendId } } });
+    await prisma.friends.delete({ where: { id: pairId } });
   }
 }

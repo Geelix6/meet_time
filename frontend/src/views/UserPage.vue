@@ -48,7 +48,7 @@ onMounted(() => {
 
 <template>
   <AppHeader />
-  <div class="mx-auto max-w-screen-lg">
+  <div class="mx-auto w-[1024px]">
     <RouterView></RouterView>
     <!-- <div>
     <p class="mt-4 text-3xl">Привет, {{ whoami.firstName }}!</p>

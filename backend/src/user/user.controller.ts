@@ -73,6 +73,12 @@ userRouter.get("/get/freetime", authMiddleware, async (req, res) => {
   res.status(200).json(freetime);
 });
 
+userRouter.post("/get/freetime", authMiddleware, async (req, res) => {
+  const userId = req.body.id;
+  const freetime = await userService.getFreeTime(userId);
+  res.status(200).json(freetime);
+});
+
 userRouter.post("/set/freetime", authMiddleware, async (req, res) => {
   const userId = req.body.$user.id;
   const timeStart = req.body.timeStart;
@@ -95,15 +101,46 @@ userRouter.post("/delete/freetime", authMiddleware, async (req, res) => {
   res.status(200).json();
 });
 
-// userRouter.get("/get/friends", authMiddleware, async (req, res) => {
-//   // const friends = await userService.getUserFriends(req.body.userId);
-//   res.status(200).json({ friends: [1, 2, 3, 4] });
-// });
+userRouter.get("/get/friends", authMiddleware, async (req, res) => {
+  const friends = await userService.getUserFriends(req.body.$user.id);
+  res.status(200).json(friends);
+});
 
-// userRouter.post("/create/friendship", async (req, res) => {
-//   const { firstFriendId, secondFriendId } = req.body;
-//   const user = await userService.createFriendship(firstFriendId, secondFriendId);
-//   res.status(201).json(user);
-// });
+userRouter.post("/set/friendship", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const nickOrEmail = req.body.nickOrEmail;
+
+  const checkForMyself = (await userService.findUserByNickOrEmail(nickOrEmail))?.id;
+  if (userId == checkForMyself) {
+    res.status(262).json("1");
+    return;
+  }
+
+  const friendRow = await userService.createFriendship(userId, nickOrEmail);
+
+  if (!friendRow) {
+    res.status(228).json("1");
+  } else {
+    res.status(200).json(friendRow);
+  }
+});
+
+userRouter.post("/accept/friend", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const friendId = req.body.friendId;
+  const pairId = req.body.pairId;
+
+  await userService.acceptFriend(pairId, friendId, userId);
+  res.status(200).json("1");
+});
+
+userRouter.post("/delete/friend", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const friendId = req.body.friendId;
+  const pairId = req.body.pairId;
+
+  await userService.deleteFriend(pairId, friendId, userId);
+  res.status(200).json("1");
+});
 
 export default userRouter;

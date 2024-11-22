@@ -10,7 +10,6 @@ const logout = () => {
 </script>
 
 <template>
-  <h1>settings</h1>
   <a
     @click.prevent="logout()"
     class="mx-auto my-10 block text-center text-xl underline"

@@ -155,7 +155,7 @@ onMounted(async () => {
     <vue-cal
       small
       locale="ru"
-      class="mb-6 !h-[600px] w-[1000px]"
+      class="mb-6 !h-[600px] w-full"
       active-view="week"
       show-time-in-cells
       :disable-views="['years', 'year', 'day', 'month']"
