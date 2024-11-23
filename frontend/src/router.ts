@@ -14,7 +14,7 @@ const router = createRouter({
       beforeEnter(_, __, next) {
         const token = localStorage.getItem("jwtToken");
         if (token) {
-          next({ path: "lk" });
+          next({ path: "lk/calendar" });
         } else {
           next();
         }

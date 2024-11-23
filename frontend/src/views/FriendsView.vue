@@ -18,20 +18,37 @@ const nickOrEmail = ref("");
 const addFriendMessage = ref("");
 const errorFriendMessage = ref("");
 const modal = ref(false);
-const freetime = ref();
+const modalCreateMeet = ref(false);
+const modalDeleteMeet = ref(false);
+const friendFreetime = ref();
+const chosenFriend = ref();
+const chosenFreetime = ref();
 
 const events = computed(() => {
-  return freetime.value?.map(
+  const freetimes = friendFreetime.value?.map(
     (e: {
       timeStart: string | number | Date;
       timeEnd: string | number | Date;
+      id: string;
+      timeStatus: string;
     }) => ({
-      title: "Свободное время",
+      freeTimeId: e.id,
       start: new Date(e.timeStart),
       end: new Date(e.timeEnd),
-      class: "!bg-green-300",
+      title: e.timeStatus || "Свободное время",
+      class: e.timeStatus ? "!bg-violet-300" : "!bg-green-300",
     }),
   );
+
+  return freetimes?.filter((e: { end: string | number | Date }) => {
+    const d1 = new Date(e.end);
+    const d2 = new Date();
+    d1.setHours(0, 0, 0, 0);
+    d2.setHours(0, 0, 0, 0);
+    const diffInMs = +d1 - +d2;
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+    return diffInDays > -1;
+  });
 });
 
 const addFriend = async () => {
@@ -142,7 +159,73 @@ const getFriendFreetime = async (id: string) => {
   if (!response.ok) {
     forceLogout(response.status, router);
   } else {
-    freetime.value = await response.json();
+    chosenFriend.value = id;
+    friendFreetime.value = await response.json();
+  }
+};
+
+const onEventClick = async (e: { freeTimeId: string; title: string }) => {
+  if (e.title.startsWith("Встреча")) {
+    // как-то заранее проверить и не открывать модалку, если не мы назанчали эту встречу
+    const response = await fetch("/api/users/check/freetime", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Bearer ${jwtToken}`,
+      },
+      body: JSON.stringify({ id: e.freeTimeId, title: e.title }),
+    });
+
+    if (!response.ok) {
+      forceLogout(response.status, router);
+    }
+    if (response.status == 228) {
+      return;
+    } else {
+      modalDeleteMeet.value = true;
+    }
+  } else {
+    modalCreateMeet.value = true;
+  }
+
+  chosenFreetime.value = e.freeTimeId;
+};
+
+const createMeet = async () => {
+  const response = await fetch("/api/users/set/meeting", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json;charset=utf-8",
+      Authorization: `Bearer ${jwtToken}`,
+    },
+
+    body: JSON.stringify({ freetimeId: chosenFreetime.value }),
+  });
+
+  if (!response.ok) {
+    forceLogout(response.status, router);
+  } else {
+    modalCreateMeet.value = false;
+    await getFriendFreetime(chosenFriend.value);
+  }
+};
+
+const deleteMeet = async () => {
+  const response = await fetch("/api/users/delete/meeting", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json;charset=utf-8",
+      Authorization: `Bearer ${jwtToken}`,
+    },
+
+    body: JSON.stringify({ freetimeId: chosenFreetime.value }),
+  });
+
+  if (!response.ok) {
+    forceLogout(response.status, router);
+  } else {
+    modalDeleteMeet.value = false;
+    await getFriendFreetime(chosenFriend.value);
   }
 };
 
@@ -225,7 +308,26 @@ onMounted(async () => {
       show-time-in-cells
       :events="events"
       :disable-views="['years', 'year', 'day', 'month']"
+      :on-event-click="onEventClick"
     />
+  </Dialog>
+
+  <Dialog
+    modal
+    v-model:visible="modalCreateMeet"
+    header="Назначить встречу?"
+    class="!w-[40vw] max-w-[80vw]"
+  >
+    <Button type="button" label="Да!" @click="() => createMeet()"></Button>
+  </Dialog>
+
+  <Dialog
+    modal
+    v-model:visible="modalDeleteMeet"
+    header="Отменить встречу?"
+    class="!w-[40vw] max-w-[80vw]"
+  >
+    <Button type="button" label="Да" @click="() => deleteMeet()"></Button>
   </Dialog>
 </template>
 

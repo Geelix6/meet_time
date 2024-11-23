@@ -232,7 +232,7 @@ const loginUser = async () => {
   <Dialog
     modal
     v-model:visible="modal.isOpen"
-    :header="modal.reason == 'reg' ? 'Зарегестрироваться' : 'Войти в аккаунт'"
+    :header="modal.reason == 'reg' ? 'Зарегистрироваться' : 'Войти в аккаунт'"
     class="w-[80vw] max-w-lg"
     @hide="closeModal()"
   >
@@ -334,7 +334,7 @@ const loginUser = async () => {
       <Button
         v-else
         type="button"
-        label="Созадть аккаунт"
+        label="Создать аккаунт"
         @click="createUser()"
       ></Button>
     </div>

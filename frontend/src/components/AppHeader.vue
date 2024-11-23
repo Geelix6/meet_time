@@ -13,14 +13,14 @@ import { RouterLink } from "vue-router";
         <RouterLink to="./friends" class="transition-opacity hover:opacity-80">
           Друзья
         </RouterLink>
-        <RouterLink to="./history" class="transition-opacity hover:opacity-80">
+        <!-- <RouterLink to="./history" class="transition-opacity hover:opacity-80">
           История
-        </RouterLink>
+        </RouterLink> -->
       </nav>
       <div class="flex items-center gap-x-8">
-        <i
+        <!-- <i
           class="pi pi-bell cursor-pointer transition-opacity hover:opacity-80"
-        ></i>
+        ></i> -->
         <RouterLink
           id="settings"
           to="./settings"

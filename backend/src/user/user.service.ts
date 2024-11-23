@@ -67,6 +67,11 @@ export default class UserService {
     await prisma.freeTime.delete({ where: { id: freeTimeId } });
   }
 
+  async checkFreeTime(userId: string, freeTimeId: string, freetimeStatus: string) {
+    const username = (await this.findUserById(userId))?.username;
+    return freetimeStatus.split(" ").at(-1) == username;
+  }
+
   async createFriendship(firstFriendId: string, secondFriendNoE: string) {
     const secondFriendId = (await this.findUserByNickOrEmail(secondFriendNoE))?.id;
 
@@ -118,5 +123,13 @@ export default class UserService {
     await prisma.userToFriends.delete({ where: { userId_pairId: { pairId, userId } } });
     await prisma.userToFriends.delete({ where: { userId_pairId: { pairId, userId: friendId } } });
     await prisma.friends.delete({ where: { id: pairId } });
+  }
+
+  async setMeeting(id: string, name: string) {
+    await prisma.freeTime.update({ where: { id }, data: { timeStatus: `Встреча с ${name}` } });
+  }
+
+  async deleteMeeting(id: string) {
+    await prisma.freeTime.update({ where: { id }, data: { timeStatus: null } });
   }
 }

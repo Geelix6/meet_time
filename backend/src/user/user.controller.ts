@@ -2,11 +2,12 @@ import { NextFunction, Request, Response, Router } from "express";
 import UserService from "./user.service";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { console } from "inspector";
 
 const userRouter = Router();
 const userService = new UserService();
 
-const secretjwtKey = process.env.secret_jwt_key;
+const secretjwtKey = process.env.SECRET_JWT_KEY;
 
 userRouter.post("/create/user", async (req, res) => {
   try {
@@ -79,6 +80,20 @@ userRouter.post("/get/freetime", authMiddleware, async (req, res) => {
   res.status(200).json(freetime);
 });
 
+userRouter.post("/check/freetime", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const freetimeId = req.body.id;
+  const freetimeStatus = req.body.title;
+
+  const check = await userService.checkFreeTime(userId, freetimeId, freetimeStatus);
+
+  if (!check) {
+    res.status(228).json();
+  } else {
+    res.status(200).json();
+  }
+});
+
 userRouter.post("/set/freetime", authMiddleware, async (req, res) => {
   const userId = req.body.$user.id;
   const timeStart = req.body.timeStart;
@@ -140,6 +155,22 @@ userRouter.post("/delete/friend", authMiddleware, async (req, res) => {
   const pairId = req.body.pairId;
 
   await userService.deleteFriend(pairId, friendId, userId);
+  res.status(200).json("1");
+});
+
+userRouter.post("/set/meeting", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const name = (await userService.findUserById(userId))?.username;
+  const id = req.body.freetimeId;
+
+  await userService.setMeeting(id, name!);
+  res.status(200).json("1");
+});
+
+userRouter.post("/delete/meeting", authMiddleware, async (req, res) => {
+  const id = req.body.freetimeId;
+
+  await userService.deleteMeeting(id);
   res.status(200).json("1");
 });
 
