@@ -17,5 +17,6 @@ app.use(PrimeVue, {
       cssLayer: false,
     },
   },
+  locale: { firstDayOfWeek: 1 },
 });
 app.mount("#app");

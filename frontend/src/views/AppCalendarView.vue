@@ -19,6 +19,7 @@ const freetime = ref<any[]>();
 const day = ref<Date>();
 const timeStart = ref<Date>();
 const timeEnd = ref<Date>();
+const chosenFreetime = ref();
 
 const modal = ref(false);
 const modalDeleteTime = ref(false);
@@ -81,6 +82,14 @@ const onEventClick = (e: {
   end: Date | undefined;
   title: string;
 }) => {
+  const freetimeId = freetime.value?.find((time) => {
+    return (
+      +new Date(time.timeStart) == +e.start! &&
+      +new Date(time.timeEnd) == +e.end!
+    );
+  });
+  chosenFreetime.value = freetimeId.id;
+
   if (e.title.startsWith("Встреча")) {
     modalMeetingDelete.value = true;
   } else {
@@ -158,6 +167,7 @@ const deleteFreetime = async () => {
     body: JSON.stringify({
       timeStart: timeStart.value,
       timeEnd: timeEnd.value,
+      freetimeId: chosenFreetime.value,
     }),
   });
 
@@ -183,6 +193,7 @@ const deleteMeeting = async () => {
     body: JSON.stringify({
       timeStart: timeStart.value,
       timeEnd: timeEnd.value,
+      freetimeId: chosenFreetime.value,
     }),
   });
 

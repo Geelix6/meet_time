@@ -60,10 +60,10 @@ export default class UserService {
     return userToFreeTime;
   }
 
-  async deleteFreeTime(userId: string, timeStart: Date, timeEnd: Date) {
-    const freeTimeId = (await prisma.freeTime.findFirst({ where: { timeStart, AND: { timeEnd } } }))!.id;
-    const userId_freeTimeId = { userId, freeTimeId };
-    await prisma.userToFreeTime.delete({ where: { userId_freeTimeId } });
+  async deleteFreeTime(userId: string, freeTimeId: string) {
+    // const freeTimeId = (await prisma.freeTime.findFirst({ where: { timeStart, AND: { timeEnd } } }))!.id;
+    // const userId_freeTimeId = { userId, freeTimeId };
+    await prisma.userToFreeTime.deleteMany({ where: { freeTimeId } });
     await prisma.freeTime.delete({ where: { id: freeTimeId } });
   }
 
@@ -125,11 +125,58 @@ export default class UserService {
     await prisma.friends.delete({ where: { id: pairId } });
   }
 
-  async setMeeting(id: string, name: string) {
-    await prisma.freeTime.update({ where: { id }, data: { timeStatus: `Встреча с ${name}` } });
+  async setMeeting(userId: string, id: string, name: string) {
+    const firstUserId = (await prisma.userToFreeTime.findFirst({ where: { freeTimeId: id } }))?.userId;
+    const firstUserUsername = (await this.findUserById(firstUserId!))?.username;
+    const freetime = await prisma.freeTime.update({
+      where: { id },
+      data: { timeStatus: `Встреча ${firstUserUsername} с ${name}` },
+    });
+    prisma.userToFreeTime.create({ data: { freeTimeId: freetime.id, userId: userId } }).catch((e) => e);
   }
 
   async deleteMeeting(id: string) {
     await prisma.freeTime.update({ where: { id }, data: { timeStatus: null } });
+  }
+
+  async updateFirstname(id: string, firstName: string) {
+    await prisma.user.update({ where: { id }, data: { firstName } });
+  }
+
+  async updateLastname(id: string, lastName: string) {
+    await prisma.user.update({ where: { id }, data: { lastName } });
+  }
+
+  async updateUsername(id: string, username: string) {
+    await prisma.user.update({ where: { id }, data: { username } });
+  }
+
+  async updateEmail(id: string, email: string) {
+    await prisma.user.update({ where: { id }, data: { email } });
+  }
+
+  async createNotification(userId: string, text: string) {
+    const notif = await prisma.notification.create({ data: { text } });
+    const notificationId = notif.id;
+    await prisma.userToNotification.create({ data: { userId, notificationId } });
+  }
+
+  async getNotifications(userId: string) {
+    const userToNotif = await prisma.userToNotification.findMany({ where: { userId } });
+    const notifications = await Promise.all(
+      userToNotif.map(async (e) => {
+        return await prisma.notification.findFirst({ where: { id: e.notificationId } });
+      })
+    );
+    return notifications;
+  }
+
+  async readNotification(id: string) {
+    await prisma.notification.update({ where: { id }, data: { isRead: true } });
+  }
+
+  async deletNotification(notifId: string, userId: string) {
+    await prisma.userToNotification.delete({ where: { userId_notificationId: { notificationId: notifId, userId } } });
+    await prisma.notification.delete({ where: { id: notifId } });
   }
 }

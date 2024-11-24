@@ -83,7 +83,6 @@ model UserToNotification {
   meeting        Notification @relation(fields: [notificationId], references: [id])
   userId         String       @db.Uuid
   notificationId String       @db.Uuid
-  meetingNote    String
 
   @@id([userId, notificationId])
 }
@@ -91,6 +90,7 @@ model UserToNotification {
 model Notification {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  user UserToNotification[]
-  text String
+  user   UserToNotification[]
+  text   String
+  isRead Boolean              @default(false)
 }

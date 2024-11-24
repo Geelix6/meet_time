@@ -2,7 +2,7 @@ import { NextFunction, Request, Response, Router } from "express";
 import UserService from "./user.service";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { console } from "inspector";
+import { prisma } from "../server";
 
 const userRouter = Router();
 const userService = new UserService();
@@ -109,10 +109,11 @@ userRouter.post("/set/freetime", authMiddleware, async (req, res) => {
 
 userRouter.post("/delete/freetime", authMiddleware, async (req, res) => {
   const userId = req.body.$user.id;
-  const timeStart = req.body.timeStart;
-  const timeEnd = req.body.timeEnd;
+  // const timeStart = req.body.timeStart;
+  // const timeEnd = req.body.timeEnd;
+  const freetimeId = req.body.freetimeId;
 
-  const userToFreeTime = await userService.deleteFreeTime(userId, timeStart, timeEnd);
+  const userToFreeTime = await userService.deleteFreeTime(userId, freetimeId);
   res.status(200).json();
 });
 
@@ -136,6 +137,10 @@ userRouter.post("/set/friendship", authMiddleware, async (req, res) => {
   if (!friendRow) {
     res.status(228).json("1");
   } else {
+    const target = await userService.findUserByNickOrEmail(nickOrEmail);
+    const targetId = target?.id;
+    const username = (await userService.findUserById(userId))?.username;
+    await userService.createNotification(targetId!, `У вас есть новая заявка в друзья от ${username}`);
     res.status(200).json(friendRow);
   }
 });
@@ -146,6 +151,10 @@ userRouter.post("/accept/friend", authMiddleware, async (req, res) => {
   const pairId = req.body.pairId;
 
   await userService.acceptFriend(pairId, friendId, userId);
+
+  const username = (await userService.findUserById(userId))?.username;
+  await userService.createNotification(friendId!, `Пользователь ${username} принял вашу заявку в друзья`);
+
   res.status(200).json("1");
 });
 
@@ -155,6 +164,10 @@ userRouter.post("/delete/friend", authMiddleware, async (req, res) => {
   const pairId = req.body.pairId;
 
   await userService.deleteFriend(pairId, friendId, userId);
+
+  const username = (await userService.findUserById(userId))?.username;
+  await userService.createNotification(friendId!, `Пользователь ${username} отменил с вами дружбу`);
+
   res.status(200).json("1");
 });
 
@@ -163,14 +176,71 @@ userRouter.post("/set/meeting", authMiddleware, async (req, res) => {
   const name = (await userService.findUserById(userId))?.username;
   const id = req.body.freetimeId;
 
-  await userService.setMeeting(id, name!);
+  const target = (await prisma.userToFreeTime.findFirst({ where: { freeTimeId: id } }))?.userId;
+  await userService.createNotification(target!, `Пользователь ${name} назначил встречу с вами`);
+
+  await userService.setMeeting(userId, id, name!);
+
   res.status(200).json("1");
 });
 
 userRouter.post("/delete/meeting", authMiddleware, async (req, res) => {
   const id = req.body.freetimeId;
 
+  // этот увед не приходит специально - 1 из дефектов
+  // const userRows = await prisma.userToFreeTime.findMany({ where: { freeTimeId: id } });
+  // await Promise.all(
+  //   userRows.map(async (e) => {
+  //     await userService.createNotification(e.userId, `Одна из ваших встреч была отменена`);
+  //   })
+  // );
+
   await userService.deleteMeeting(id);
+  res.status(200).json("1");
+});
+
+userRouter.post("/set/firstname", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const firstName = req.body.newValue;
+  await userService.updateFirstname(userId, firstName);
+  res.status(200).json("1");
+});
+
+userRouter.post("/set/lastname", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const lastName = req.body.newValue;
+  await userService.updateLastname(userId, lastName);
+  res.status(200).json("1");
+});
+
+userRouter.post("/set/nickname", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const username = req.body.newValue;
+  await userService.updateUsername(userId, username);
+  res.status(200).json("1");
+});
+
+userRouter.post("/set/email", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const email = req.body.newValue;
+  await userService.updateEmail(userId, email);
+  res.status(200).json("1");
+});
+
+userRouter.get("/get/notif", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  const notifs = await userService.getNotifications(userId);
+  res.status(200).json(notifs);
+});
+
+userRouter.post("/set/notif", authMiddleware, async (req, res) => {
+  await userService.readNotification(req.body.notifId);
+  res.status(200).json("1");
+});
+
+userRouter.post("/delete/notif", authMiddleware, async (req, res) => {
+  const userId = req.body.$user.id;
+  await userService.deletNotification(req.body.notifId, userId);
   res.status(200).json("1");
 });
 
